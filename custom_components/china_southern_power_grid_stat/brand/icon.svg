@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#45c9ff"/>
+      <stop offset="1" stop-color="#1673e8"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="286" y1="128" x2="215" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff06a"/>
+      <stop offset="1" stop-color="#ffb000"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  <rect x="92" y="126" width="328" height="298" rx="54" fill="#fff" opacity=".94"/>
+  <rect x="92" y="126" width="328" height="86" rx="54" fill="#0d61c9"/>
+  <rect x="92" y="176" width="328" height="36" fill="#0d61c9"/>
+  <rect x="156" y="80" width="38" height="104" rx="19" fill="#d9f2ff"/>
+  <rect x="318" y="80" width="38" height="104" rx="19" fill="#d9f2ff"/>
+  <path d="M286 227h-58l38-86h-45l-51 124c-5 13 4 27 18 27h53l-30 96 125-137c9-10 2-24-11-24h-39z" fill="url(#bolt)"/>
+  <circle cx="154" cy="352" r="18" fill="#8fd5ff"/>
+  <circle cx="358" cy="352" r="18" fill="#8fd5ff"/>
+</svg>
