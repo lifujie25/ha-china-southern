@@ -1,9 +1,11 @@
 # 南方电网用电统计与日历
 
 [![HACS](https://img.shields.io/badge/HACS-自定义仓库-41BDF5.svg)](https://www.hacs.xyz/)
-[![发布版本](https://img.shields.io/github/v/release/lifujie25/ha)](https://github.com/lifujie25/ha/releases)
-[![Validate](https://github.com/lifujie25/ha/actions/workflows/validate.yml/badge.svg)](https://github.com/lifujie25/ha/actions/workflows/validate.yml)
-[![GPL-3.0](https://img.shields.io/github/license/lifujie25/ha)](LICENSE)
+[![发布版本](https://img.shields.io/github/v/release/lifujie25/ha-china-southern)](https://github.com/lifujie25/ha-china-southern/releases)
+[![Validate](https://github.com/lifujie25/ha-china-southern/actions/workflows/validate.yml/badge.svg)](https://github.com/lifujie25/ha-china-southern/actions/workflows/validate.yml)
+[![GPL-3.0](https://img.shields.io/github/license/lifujie25/ha-china-southern)](LICENSE)
+
+> 这是 [lifujie25/ha Home Assistant 插件合集](https://github.com/lifujie25/ha) 中的一个独立项目。
 
 面向 Home Assistant 的南方电网自定义集成，适用于广东、广西、云南、贵州、海南。它会读取南网在线中的用电、电费和阶梯信息，并自带一个手机友好的“用电日历”侧边栏。
 
@@ -28,7 +30,7 @@
 3. 存储库填写：
 
    ```text
-   https://github.com/lifujie25/ha
+   https://github.com/lifujie25/ha-china-southern
    ```
 
 4. 类别选择 **集成**，点击 **添加**。
@@ -135,6 +137,6 @@ custom_components/china_southern_power_grid_stat
 
 ## 开发与反馈
 
-- 问题反馈：[GitHub Issues](https://github.com/lifujie25/ha/issues)
+- 问题反馈：[GitHub Issues](https://github.com/lifujie25/ha-china-southern/issues)
 - 更新记录：[CHANGELOG.md](CHANGELOG.md)
 - 许可证：[GPL-3.0](LICENSE)

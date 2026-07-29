@@ -5,7 +5,7 @@ from datetime import timedelta
 from .csg_client import LoginType
 
 DOMAIN = "china_southern_power_grid_stat"
-INTEGRATION_VERSION = "1.3.0"
+INTEGRATION_VERSION = "1.3.1"
 
 # bundled electricity calendar panel
 PANEL_URL_PATH = "csg-electricity-calendar"
