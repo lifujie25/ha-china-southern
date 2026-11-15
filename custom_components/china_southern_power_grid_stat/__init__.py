@@ -144,7 +144,8 @@ async def async_remove_config_entry_device(
         entity_reg.async_remove(entity_id)
 
     # update config entry
-    new_data = config_entry.data.copy()
+    new_data = dict(config_entry.data)
+    new_data[CONF_ELE_ACCOUNTS] = dict(new_data.get(CONF_ELE_ACCOUNTS, {}))
     new_data[CONF_ELE_ACCOUNTS].pop(account_num)
     new_data[CONF_UPDATED_AT] = str(int(time.time() * 1000))
     hass.config_entries.async_update_entry(

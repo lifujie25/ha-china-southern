@@ -35,7 +35,10 @@ class CSGAPIError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return f"<CSGAPIError sta={self.sta} message={self.msg}>"
+        message = str(self.msg)
+        if len(message) > 500:
+            message = message[:500] + "..."
+        return f"<CSGAPIError sta={self.sta} message={message}>"
 
 
 class CSGHTTPError(CSGAPIError):
@@ -244,25 +247,78 @@ class CSGClient:
             headers[HEADER_X_AUTH_TOKEN] = self.auth_token
             headers[HEADER_CUST_NUMBER] = self.customer_number
         if method == "POST":
-            response = self._session.post(url, json=payload, headers=headers)
-            if response.status_code != 200:
-                _LOGGER.error(
-                    "API call %s returned status code %d", path, response.status_code
+            # The CSG gateway intermittently returns 502/503/504 and transient
+            # connection errors. Keep retries bounded so HA can finish a refresh.
+            max_attempts = 3
+            retry_http_statuses = {502, 503, 504}
+
+            for attempt in range(max_attempts):
+                try:
+                    response = self._session.post(
+                        url,
+                        json=payload,
+                        headers=headers,
+                        timeout=15,
+                    )
+                except requests.RequestException:
+                    if attempt + 1 >= max_attempts:
+                        raise
+                    delay = 2**attempt
+                    _LOGGER.warning(
+                        "Transient connection error calling %s; retrying in %ss",
+                        path,
+                        delay,
+                    )
+                    time.sleep(delay)
+                    continue
+
+                if response.status_code != 200:
+                    if (
+                        response.status_code in retry_http_statuses
+                        and attempt + 1 < max_attempts
+                    ):
+                        delay = 2**attempt
+                        _LOGGER.warning(
+                            "CSG API %s returned HTTP %s; retrying in %ss",
+                            path,
+                            response.status_code,
+                            delay,
+                        )
+                        time.sleep(delay)
+                        continue
+                    _LOGGER.error(
+                        "API call %s returned status code %d",
+                        path,
+                        response.status_code,
+                    )
+                    raise CSGHTTPError(response.status_code)
+
+                json_str = response.content.decode("utf-8", errors="ignore")
+                json_str = json_str[json_str.find("{") : json_str.rfind("}") + 1]
+                response_data = json.loads(json_str)
+
+                # sta=02 is commonly returned by the CSG marketing database
+                # during short backend outages. Retry it, but do not loop forever.
+                if (
+                    response_data.get(JSON_KEY_STA) == "02"
+                    and attempt + 1 < max_attempts
+                ):
+                    delay = 2**attempt
+                    _LOGGER.warning(
+                        "CSG API %s returned sta=02; retrying in %ss", path, delay
+                    )
+                    time.sleep(delay)
+                    continue
+
+                _LOGGER.debug(
+                    "_make_request: %s, response sta=%s",
+                    path,
+                    response_data.get(JSON_KEY_STA),
                 )
-                raise CSGHTTPError(response.status_code)
+                # headers need to be returned since they may contain additional data
+                return response.headers, response_data
 
-            json_str = response.content.decode("utf-8", errors="ignore")
-            json_str = json_str[json_str.find("{") : json_str.rfind("}") + 1]
-            json_data = json.loads(json_str)
-            response_data = json_data
-            _LOGGER.debug(
-                "_make_request: %s, response: %s",
-                path,
-                json.dumps(response_data, ensure_ascii=False),
-            )
-
-            # headers need to be returned since they may contain additional data
-            return response.headers, response_data
+            raise CSGHTTPError(599)
 
         raise NotImplementedError()
 
@@ -626,11 +682,24 @@ class CSGClient:
         self.customer_number = resp_data[JSON_KEY_CUST_NUMBER]
 
     def verify_login(self) -> bool:
-        """Verify validity of the session"""
+        """Verify validity of the session.
+
+        A transient CSG gateway/backend error is not evidence that the token is
+        invalid. Keep the entry usable and let the coordinator retry data calls;
+        only an explicit not-logged-in response triggers reauthentication.
+        """
         try:
             self.api_query_authentication_result()
         except NotLoggedIn:
             return False
+        except CSGAPIError as err:
+            if err.sta == "02" or str(err.sta).startswith("HTTP"):
+                _LOGGER.warning(
+                    "Could not verify CSG session due to transient API error: %s",
+                    err,
+                )
+                return True
+            raise
         return True
 
     def logout(self, login_type: LoginType):

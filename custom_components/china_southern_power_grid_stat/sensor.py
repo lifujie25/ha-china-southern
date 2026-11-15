@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from copy import deepcopy
 import datetime
 import logging
 import time
@@ -433,9 +434,10 @@ class CSGCoordinator(DataUpdateCoordinator):
             )
             return False, (func.__name__, err)
         except CSGAPIError as err:
-            _LOGGER.error(
-                "Error fetching data in coordinator: API error, function %s, %s",
+            _LOGGER.warning(
+                "CSG API unavailable in %s (sta=%s): %s",
                 func.__name__,
+                err.sta,
                 err,
             )
             return False, (func.__name__, err)
@@ -997,7 +999,7 @@ class CSGCoordinator(DataUpdateCoordinator):
         metering_point_data = {}
         config_entry_need_update = False
         await self._async_refresh_client()
-        new_config = self._config.copy()
+        new_config = deepcopy(dict(self._config))
         for account_number, account_data in self._config[CONF_ELE_ACCOUNTS].items():
             self._gathered_data[account_number] = {}
             account = CSGElectricityAccount.load(account_data)
