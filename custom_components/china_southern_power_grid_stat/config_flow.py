@@ -317,7 +317,8 @@ class CSGConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # TODO: username (mobile) may not be the best unique id
         unique_id = f"CSG-{username}"
         await self.async_set_unique_id(unique_id)
-        self._abort_if_unique_id_configured()
+        if self._reauth_entry is None:
+            self._abort_if_unique_id_configured()
 
     async def create_or_update_config_entry(
         self, auth_token, login_type, password, username
@@ -417,14 +418,24 @@ class CSGOptionsFlowHandler(config_entries.OptionsFlow):
             for account in self.all_electricity_accounts:
                 if account.account_number == account_num_to_add:
                     # store the account config in main entry instead of creating new entries
-                    new_data = self.config_entry.data.copy()
+                    # ConfigEntry.data is a read-only top-level mapping in
+                    # recent HA versions. Make a real deep copy before changing
+                    # the nested accounts mapping so the UI flow is persisted.
+                    new_data = copy.deepcopy(dict(self.config_entry.data))
+                    new_data[CONF_ELE_ACCOUNTS] = dict(
+                        new_data.get(CONF_ELE_ACCOUNTS, {})
+                    )
                     new_data[CONF_ELE_ACCOUNTS][account_num_to_add] = account.dump()
-                    # this must be set or update won't be detected
                     new_data[CONF_UPDATED_AT] = str(int(time.time() * 1000))
-                    self.hass.config_entries.async_update_entry(
+                    updated = self.hass.config_entries.async_update_entry(
                         self.config_entry,
                         data=new_data,
                     )
+                    if not updated:
+                        _LOGGER.warning(
+                            "Config entry update reported no change while adding ele account %s",
+                            account_num_to_add,
+                        )
                     _LOGGER.info(
                         "Added ele account to %s: %s",
                         self.config_entry.data[CONF_USERNAME],
@@ -501,7 +512,8 @@ class CSGOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is None:
             return self.async_show_form(step_id=STEP_SETTINGS, data_schema=schema)
 
-        new_data = self.config_entry.data.copy()
+        new_data = copy.deepcopy(dict(self.config_entry.data))
+        new_data[CONF_SETTINGS] = dict(new_data.get(CONF_SETTINGS, {}))
         new_data[CONF_SETTINGS][CONF_UPDATE_INTERVAL] = user_input[CONF_UPDATE_INTERVAL]
         new_data[CONF_UPDATED_AT] = str(int(time.time() * 1000))
         self.hass.config_entries.async_update_entry(
